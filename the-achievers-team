@@ -1,0 +1,94 @@
+#define BLYNK_TEMPLATE_ID ""
+#define BLYNK_TEMPLATE_NAME "ultrasonic sensor"
+#define BLYNK_AUTH_TOKEN ""
+#define BLYNK_PRINT Serial
+
+#include<WiFi.h>
+#include<BlynkSimpleEsp32.h>
+
+#define ultrasonicNoise 0
+#define distanceThreshold 30
+
+char ssid[]="The WIFI";
+char password[]="123madhu";
+
+// Pins
+int trigPin=12;
+int echoPin=14;
+int buzzerPin=23;
+int ledPin=22;
+
+void setup() {
+  projectInit();
+}
+
+void loop() {
+  int d=readDistanceFromUltrasonic();
+  if(d==ultrasonicNoise)
+    return;
+  if(d<distanceThreshold){
+    buzzerControl("on");
+    ledControl("on");
+  }else {
+    buzzerControl("off");
+    ledControl("off");
+  }
+  uploadDataToBlynk(d);
+  delay(1000);
+}
+
+
+void projectInit(){
+  Serial.begin(115200);
+
+  pinMode(trigPin,OUTPUT);
+  pinMode(echoPin,INPUT);
+  pinMode(buzzerPin,OUTPUT);
+  pinMode(ledPin,OUTPUT);
+
+  Blynk.begin(BLYNK_AUTH_TOKEN,ssid,password);
+}
+
+int readDistanceFromUltrasonic(){
+  digitalWrite(trigPin,0);
+  delayMicroseconds(2);
+  digitalWrite(trigPin,1);
+  delayMicroseconds(10);
+  digitalWrite(trigPin,0);
+
+  float duration=pulseIn(echoPin,1);
+  duration=duration/2;
+
+  int distance=(0.034)*duration;
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+  return distance;
+}
+
+void buzzerControl(String action){
+  if(action=="on"){
+    digitalWrite(buzzerPin,1);
+    Serial.println("Buzzer ON");
+  }
+  else if(action=="off"){
+    digitalWrite(buzzerPin,0);
+    Serial.println("Buzzer OFF");
+  }
+}
+
+void ledControl(String action){
+  if(action=="on"){
+    digitalWrite(ledPin,1);
+    Serial.println("LED ON");
+  }
+  else if(action=="off"){
+    digitalWrite(ledPin,0);
+    Serial.println("LED OFF");
+  }
+}
+
+void uploadDataToBlynk(int d){
+  Blynk.virtualWrite(V0,d);
+  delay(10);
+}
